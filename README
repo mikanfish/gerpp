@@ -1,0 +1,205 @@
+/**********************************************************
+* Project 4: gerp
+* CS 15
+* 4/30/2023
+* README
+* Nathan Moreno
+* Gabby Fischberg
+*********************************************************/
+
+Compile/run:
+     - Compile using
+            make gerp
+     - run executable with
+            ./gerp inputDirectory outputFile
+................................................................................
+Program Purpose:
+    Build a hash that indexes a set of files, then use that index 
+    to respond to queries. 
+
+Acknowledgements: 
+       Milod Kazerounian's lecture slides (shoutout to the templates slides for 
+       aiding in modularity of our HashTable class)
+       Proj4 gerp spec
+
+Files: 
+       main.cpp
+            driver for gerp, runs gerp to index and respond to queries. 
+       gerp.h
+            Interface for gerp class, includes relevant functions
+            such as reading from file, indexing, and searching HashTables
+       gerp.cpp
+            Implementation of a gerp class that uses HashTable to index 
+            files and responds to queries on the contents of files
+       HashNode.h
+            Implementation and interface for HashNode class. Includes relevant
+            functions such as getters and setters for nodes. Note that the 
+            implementation and interface were not able to be serarated because
+            templates were used, and they only work per file 
+       HashTable.h
+            Implementation and interface for HashTable class. Includes relevant
+            functions such as insert, contains, and rehashing. Note that the 
+            implementation and interface were not able to be serarated because
+            templates were used, and they only work per file 
+       Makefile
+              Links all files and creates executable for gerp program.
+       README
+              Information about program structure and testing.
+       unit_tests.h
+              Testing framework used in this project.
+
+Architectural Overview:
+    This project consisted of three main modules: the gerp class, the 
+    HashTable, and the HashNode.
+
+    Additonally, two provided modules are utilized: FSTree and DirNode
+
+    The gerp class abstracts the use of the HashTable and HashNode classes from 
+    the user and contains the implementation for indexing entire directories 
+    and searching for each instance of a word selected by the user in a query 
+    loop. Searching through directories was aided by the FSTree module which 
+    allowed for directories to be traversed and files to be accessed. The 
+    provided DirNode class is used in the FSTree to represent those files and 
+    subdirectoreis and give the gerp class access to them. Gerp responds to 
+    user commands to search sensitively and insensitively for a word, change 
+    output files, and quit the overarching program. This is the class that is 
+    created and ran in the driver file. 
+
+    The HashTable class is essential to the functionality of the gerp class 
+    because it is used in almost every main functionalty of the gerp class 
+    (indexing each instance of a word from each file, searching for words, and 
+    printing relevant information). The five main instances of the HashTable 
+    class in the Gerp class are for storing the paths to lines containing each 
+    distinct word, storing the lines corresponding to each path, storing each 
+    variation of uppercase/lowercase spellings corresponding to a word, storing 
+    words that have already been found within a line to prevent duplicate 
+    storing and minimize memory and time needed to run Gerp, and storing lines 
+    that have already been printed to form insensitve searches to prevent 
+    duplciate printing.
+
+    The last major module, the HashNode class, is the basic unit that allows 
+    the HashTable class to work. The HashNode stores a key and value neatly 
+    together so that they may be stored in each index of a HashTable.
+
+Data Structures:
+    Data structures used in this project were our implementation of HashTable,
+    vectors, and linked lists. 
+    A hash table is a data structure that stores key-value pairs using a hash
+    function to map keys to indices of an array or vector. The key can then be
+    used to compute the index and retrieve the value stored. The advantage of
+    using hash tables is the constant-time complexity for searching and 
+    inserting elements, which is O(1) with a good hash function. This makes
+    hash tables great for when fast lookups are needed, such as in gerp. 
+    Disadvantages of hash tables is collisions, where two different keys map
+    to the same index. To handle collisions in this project, we used the 
+    chaining technique. Another disadvantage is that hash tables aren’t good
+    for situations where preserving order or hierarchy of data are important. 
+    
+    We used 5 hash tables (3 global hashes, and 2 temporary hashes) in our 
+    project. We used a vector of linked HashNodes to implement HashTable class.
+    A vector was used because vectors can dynamically resize to hold more 
+    elements as needed, which allows the hash table to grow and shrink without
+    requiring us to declare a fixed-size array. Another reason we used vectors
+    is because vectors can efficiently access individual elements with constant
+    time indexing, which was particularly important for this project because
+    we wanted our hash lookups to be as fast as possible. 
+    We used a linked list of HashNodes (chaining) for each index of the vector
+    to handle collisions. When collisions occurs, a new Hashnode containing the
+    key/value pair is added to the linked list at that index. When searching
+    for a key, the hash function is first used to find the index and then the
+    linked list is traversed to find the corresponding value. A pro of this 
+    method is that it is simpler than using open addressing, and ensures that
+    all key/value pairs can be stored and retrived correctly, even if they hash
+    to the same index. A con is that it could result in slower performance due
+    to the need to traverse the linked list for collisions. However, multiple
+    collisions should be a rare occurance since the hash table will rehash if
+    the load factor becomes larger than the max load. 
+
+    The first hash was our hash table of words, where
+    the keys were each word (case sensitive) and the value was a vector of 
+    strings that would store a path associated to every instance of the word.
+    A vector was used for the values because when printing, every path 
+    associated with a word could easily be iterated through. A linked list also 
+    could have been used but a vector was more easily implemented as memory was 
+    reallocated to the heap automatically upon destruction by the std::vector 
+    class whereas a linkedlist would've required an additional function to aid 
+    in destruction. The second hash table entitled "aux" contained strings with 
+    the path and line number as a key and the string containing that line as a 
+    value. This hash table was used to prevent storing multiple instances of a 
+    line for printing. With this implementation, the pathline (stored in the 
+    first hash table) could be used as a key and the corresponding line would 
+    only have to be stored once and be accesed with O(1) complexity. The third 
+    global hash table, "insensitive", contained a lowercase word as a key and 
+    all permutations of that word found thruoughtout the directories as the 
+    values. This third hash table was utilized for insensitive searches. Any 
+    word searched would be converted to a lowercase version, inserted as a key 
+    into the insensitve hash table and then the values could be iterated 
+    through O(n) where n = the number of distinct permutations of a word which 
+    could then be inserted into the first "words" hash table to access (with 
+    constant complexity) the arraylists containing every line where those words 
+    were found. These three hash tables essentially made searching for a word 
+    have average O(1) and worse case O(n) where n is distinct permutations of 
+    words which we deemed to be acceptable since there were usually very few 
+    distinct permutations of a word found. This is much better than 
+    implementing gerp using other data structures as hash tables are the only 
+    structure that can achieve O(1) searching and gerp is a program almost 
+    wholely dependent on the ability to search large amounts of data.
+
+    The two additional hash tables used were created locally in functions to 
+    prevent duplicates in inserting to global hash tables or when printing the 
+    results of insensitive searches. The first of these local hash tables was 
+    used in the readFile function to prevent duplicate instances of a word at a 
+    specific line being inserted to the global hash tables. This local table 
+    was implemented using a word as a key and bool as a value (a bool was used 
+    because only the keys mattered and bools only require 1 bit of memory). 
+    When reading each line, every distinct word would be inserted into the hash 
+    table (constant time) and when inserting into the larger global hash tables 
+    the contains function could search if that word had previously been found 
+    at that line (constant time) to prevent storing duplicate line paths. The 
+    second local hash table was used in printing for insensitive searches and 
+    operated similarly to prevent printing duplicates. Instead of a word as 
+    key, it uilized a path as a key and paths could be searched in the hash 
+    table to see if they had already been printed. Hash table was useful for 
+    preventing duplicates because of their constant search and insertion 
+    (better than any other data structure).
+
+    Additinally, the FSTree class was provided by the course and uses a n-ary 
+    tree to store all files and subdirectories in a manner that allows them to 
+    be traversed using O(n) complexity as each file only needs to be touched 
+    once and each subdirectory only needs to be touched once. The parents in 
+    this tree represent directories while the children represent files and 
+    subdirectories.
+
+Testing:
+    In this project, we used unit testing to test our implementations of 
+    HashNode, HashTable, and gerp seperately. For each function, we have
+    one or more unit tests that we have written to ensure the function works 
+    as intended. 
+    For the HashNode tests, we test to make sure our getters and setters are
+    working properly to change the values of our nodes. Edge cases we test are
+    concerning empty nodes, already full nodes, and copying nodes using our 
+    copy constructor and overloaded assignment operator. 
+    For our HashTable tests in particular, we made sure to test a lot 
+    since HashTables are the backbone of this project. We test the insertion
+    function very thoroughly. For example we test insertion into empty hash
+    tables, full hash tables, and then retrive the values to make sure 
+    our insertion is working correctly. We also used our print table 
+    function a lot to determine whether HashNodes were being inserted into the
+    right buckets and if chaining was working. We also have tests specifically 
+    for rehash, checking collisions, and inserting a large number of values.
+    These tests are to ensure that our hash table implementation is robust
+    and works correctly under any conditions. While testing these classes, 
+    we had private member functions and values unprivated to allow for easier
+    testing and access. Note this means that the unit tests will not properly
+    work because they were reprivated for submission. 
+    Lastly, to test gerp we tested out construction and indexing the tinyData
+    directory in unit testing, then did most of the testing in command line,
+    as we needed to diff test with the_gerp program. By comparing the 
+    differences between the two outputs, we can identify any discrepancies 
+    and make sure our program matches the reference program. 
+
+Time Spent:
+       30 Hours
+
+Most Difficult aspect:
+    implementing hash table specifically insert function
